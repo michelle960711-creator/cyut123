@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>品味飯捲 點餐系統</title>
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 自訂動畫與捲軸樣式 */
+    .fade-in { animation: fadeIn 0.2s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-red-600 text-white shadow-md sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <!-- Utensils Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+        <h1 class="text-xl md:text-2xl font-bold tracking-wider">品味飯捲 點餐系統</h1>
+      </div>
+      <button onclick="toggleOrdersModal(true)" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 rounded-full text-sm font-medium">
+        <!-- ClipboardList Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        <span class="hidden sm:inline">檢視所有訂單</span>
+        <span id="header-orders-badge" class="hidden bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full ml-1">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 w-full flex-1">
+    
+    <!-- 左側：菜單區 -->
+    <div class="flex-1">
+      <!-- 類別標籤 -->
+      <div id="category-container" class="flex flex-wrap gap-2 mb-6"></div>
+      <!-- 菜單列表 -->
+      <div id="menu-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- 右側：購物車 -->
+    <div class="w-full lg:w-96 flex-shrink-0">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky top-24 flex flex-col">
+        <!-- 購物車 Header (橘色) -->
+        <div class="bg-[#f07b1a] text-white px-5 py-4 flex items-center gap-2">
+          <!-- ShoppingCart Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          <h2 class="text-lg font-bold">目前點餐</h2>
+          <span id="cart-badge" class="ml-auto bg-white text-[#f07b1a] px-3 py-1 rounded-full text-sm font-bold">0 項</span>
+        </div>
+
+        <!-- 購物車內容 -->
+        <!-- 空狀態 -->
+        <div id="cart-empty-state" class="flex-1 flex flex-col items-center justify-center py-16 px-6 bg-white min-h-[300px]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-200 mb-4"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          <p class="text-gray-500 font-medium mb-2">購物車是空的</p>
+          <p class="text-gray-400 text-sm">請從左側菜單選擇餐點</p>
+        </div>
+        
+        <!-- 有商品狀態 -->
+        <div id="cart-items-wrapper" class="hidden flex-col h-full bg-white">
+          <div id="cart-items-container" class="flex-1 overflow-y-auto max-h-[50vh] p-5 space-y-4"></div>
+        </div>
+
+        <!-- 結帳 Footer -->
+        <div class="border-t border-gray-100 p-5 bg-white">
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-gray-600 font-medium">總計</span>
+            <span id="cart-total" class="text-3xl font-bold text-red-600">$0</span>
+          </div>
+          <button id="cart-submit-btn" onclick="handlePlaceOrder()" disabled class="w-full py-3 rounded-xl font-bold transition-all bg-gray-300 text-gray-500 cursor-not-allowed">
+            送出訂單
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 訂單 Modal -->
+  <div id="orders-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div class="bg-gray-50 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden fade-in">
+      <!-- Modal Header -->
+      <div class="bg-white px-6 py-4 border-b flex justify-between items-center sticky top-0">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-700"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+          <h2 class="text-xl font-bold text-gray-800">所有顧客訂單</h2>
+        </div>
+        <button onclick="toggleOrdersModal(false)" class="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div id="orders-container" class="p-6 overflow-y-auto flex-1">
+        <p class="text-center text-gray-500 py-10">連線中，請稍候...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 應用程式邏輯 (Vanilla JS + Firebase) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==========================================
+    // 1. Firebase 參數設定區 (請在此處填入您的設定)
+    // ==========================================
+    const MY_FIREBASE_CONFIG = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // 確保預覽環境相容性的保護機制 (若未填寫時會讀取環境變數)
+    const firebaseConfig = (MY_FIREBASE_CONFIG.apiKey === "YOUR_API_KEY" && typeof __firebase_config !== 'undefined') 
+      ? JSON.parse(__firebase_config) 
+      : MY_FIREBASE_CONFIG;
+    
+    const globalAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-restaurant-app';
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ==========================================
+    // 2. 系統狀態與資料
+    // ==========================================
+    let user = null;
+    let cart = [];
+    let orders = [];
+    let activeCategory = '全部';
+    let isSubmitting = false;
+
+    const CATEGORIES = ['全部', '葷食飯捲', '素食', '麵食'];
+    
+    const MENU_ITEMS = [
+      { id: 'm1', name: '肉鬆飯捲', price: 50, category: '葷食飯捲' },
+      { id: 'm2', name: '火腿飯捲', price: 50, category: '葷食飯捲' },
+      { id: 'm3', name: '熱狗飯捲', price: 50, category: '葷食飯捲' },
+      { id: 'm4', name: '蟹肉飯捲', price: 50, category: '葷食飯捲' },
+      { id: 'm5', name: '韓式泡菜飯捲', price: 55, category: '葷食飯捲' },
+      { id: 'm6', name: '培根飯捲', price: 55, category: '葷食飯捲' },
+      { id: 'm7', name: '薯餅飯捲', price: 55, category: '葷食飯捲' },
+      { id: 'm8', name: '鮪魚飯捲', price: 60, category: '葷食飯捲' },
+      { id: 'm9', name: '夏威夷飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm10', name: '煙燻雞肉飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm11', name: '日式照燒飯捲', price: 70, category: '葷食飯捲' },
+      { id: 'm12', name: '辣子雞肉飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm13', name: '檸檬雞柳飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm14', name: '辣味卡拉飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm15', name: '墨西哥辣椒雞飯捲', price: 70, category: '葷食飯捲' },
+      { id: 'm16', name: '起司豬排飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm17', name: '照燒豬肉飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm18', name: '打拋豬肉飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'm19', name: '黑胡椒豬柳飯捲', price: 65, category: '葷食飯捲' },
+      { id: 'v1', name: '黃金玉米 (素)', price: 45, category: '素食' },
+      { id: 'v2', name: '素肉鬆 (素)', price: 45, category: '素食' },
+      { id: 'v3', name: '清甜鳳梨 (素)', price: 50, category: '素食' },
+      { id: 'v4', name: '芝麻牛蒡 (素)', price: 50, category: '素食' },
+      { id: 'v5', name: '生菜沙拉 (素)', price: 60, category: '素食' },
+      { id: 'n1', name: '炒麵', price: 50, category: '麵食' }
+    ];
+
+    // ==========================================
+    // 3. UI 渲染函數
+    // ==========================================
+    function renderCategories() {
+      const container = document.getElementById('category-container');
+      container.innerHTML = CATEGORIES.map(cat => `
+        <button onclick="window.setActiveCategory('${cat}')" class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+          activeCategory === cat
+            ? 'bg-red-600 text-white shadow-md'
+            : 'bg-white text-gray-600 hover:bg-red-50 border border-gray-200'
+        }">${cat}</button>
+      `).join('');
+    }
+
+    function renderMenu() {
+      const container = document.getElementById('menu-container');
+      const filtered = activeCategory === '全部' ? MENU_ITEMS : MENU_ITEMS.filter(item => item.category === activeCategory);
+      
+      container.innerHTML = filtered.map(item => `
+        <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 border border-gray-100 flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-bold text-gray-800">${item.name}</h3>
+            <p class="text-red-600 font-semibold mt-1">NT$ ${item.price}</p>
+          </div>
+          <button onclick="window.addToCart('${item.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg transition-colors" aria-label="加入 ${item.name}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderCart() {
+      const emptyState = document.getElementById('cart-empty-state');
+      const itemsWrapper = document.getElementById('cart-items-wrapper');
+      const itemsContainer = document.getElementById('cart-items-container');
+      const badge = document.getElementById('cart-badge');
+      const totalEl = document.getElementById('cart-total');
+      const submitBtn = document.getElementById('cart-submit-btn');
+
+      const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+      const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+      badge.textContent = `${totalItems} 項`;
+      totalEl.textContent = `$${totalPrice}`;
+
+      if (cart.length === 0) {
+        emptyState.classList.remove('hidden');
+        itemsWrapper.classList.add('hidden');
+        itemsWrapper.classList.remove('flex');
+        
+        submitBtn.disabled = true;
+        submitBtn.className = "w-full py-3 rounded-xl font-bold transition-all bg-gray-300 text-gray-500 cursor-not-allowed";
+        submitBtn.textContent = "送出訂單";
+      } else {
+        emptyState.classList.add('hidden');
+        itemsWrapper.classList.remove('hidden');
+        itemsWrapper.classList.add('flex');
+        
+        if(isSubmitting) {
+          submitBtn.disabled = true;
+          submitBtn.className = "w-full py-3 rounded-xl font-bold transition-all bg-gray-300 text-gray-500 cursor-not-allowed";
+          submitBtn.textContent = "送出訂單中...";
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.className = "w-full py-3 rounded-xl font-bold transition-all bg-[#f07b1a] hover:bg-[#d96b15] text-white shadow-md active:scale-[0.98]";
+          submitBtn.textContent = "送出訂單";
+        }
+
+        itemsContainer.innerHTML = cart.map(item => `
+          <div class="flex items-center justify-between group">
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-800">${item.name}</h4>
+              <div class="text-sm text-gray-500">NT$ ${item.price}</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center bg-gray-100 rounded-lg">
+                <button onclick="window.updateCartQty('${item.id}', -1)" class="p-1 hover:bg-gray-200 rounded-l-lg transition-colors"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+                <span class="w-8 text-center font-medium text-sm">${item.qty}</span>
+                <button onclick="window.updateCartQty('${item.id}', 1)" class="p-1 hover:bg-gray-200 rounded-r-lg transition-colors"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+              </div>
+              <button onclick="window.removeFromCart('${item.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderOrders() {
+      const container = document.getElementById('orders-container');
+      const badge = document.getElementById('header-orders-badge');
+      
+      const preparingCount = orders.filter(o => o.status === 'preparing').length;
+      if (preparingCount > 0) {
+        badge.classList.remove('hidden');
+        badge.textContent = preparingCount;
+      } else {
+        badge.classList.add('hidden');
+      }
+
+      if (!user) {
+        container.innerHTML = '<p class="text-center text-gray-500 py-10">連線中，請稍候...</p>';
+        return;
+      }
+
+      if (orders.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-300 mb-4"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+            <p class="text-lg text-gray-500 font-medium">目前尚無任何訂單記錄</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-2">
+          ${orders.map(order => {
+            const isCompleted = order.status === 'completed';
+            const dateStr = new Intl.DateTimeFormat('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(order.createdAt));
+            
+            const itemsHtml = order.items.map(item => `
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-700 font-medium">${item.name} <span class="text-gray-400">x${item.qty}</span></span>
+                <span class="text-gray-600">NT$ ${item.price * item.qty}</span>
+              </div>
+            `).join('');
+
+            return `
+              <div class="bg-white p-5 rounded-xl border-l-4 shadow-sm ${isCompleted ? 'border-green-500 opacity-75' : 'border-yellow-400'}">
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${dateStr}
+                  </div>
+                  <button onclick="window.toggleOrderStatus('${order.id}', '${order.status}')" class="text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1 transition-colors ${isCompleted ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}">
+                    ${isCompleted ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> 已出餐' : '製作中 (點擊完成)'}
+                  </button>
+                </div>
+                <div class="space-y-2 mb-4 min-h-[60px]">${itemsHtml}</div>
+                <!-- 移除亂碼，僅保留總計 -->
+                <div class="border-t pt-3 flex justify-end items-center mt-auto">
+                  <span class="font-bold text-gray-800">總計: NT$ ${order.total}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 4. 互動邏輯綁定
+    // ==========================================
+    window.setActiveCategory = (cat) => {
+      activeCategory = cat;
+      renderCategories();
+      renderMenu();
+    };
+
+    window.addToCart = (id) => {
+      const item = MENU_ITEMS.find(i => i.id === id);
+      const existing = cart.find(i => i.id === id);
+      if (existing) existing.qty++;
+      else cart.push({ ...item, qty: 1 });
+      renderCart();
+    };
+
+    window.updateCartQty = (id, delta) => {
+      const item = cart.find(i => i.id === id);
+      if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+      }
+      renderCart();
+    };
+
+    window.removeFromCart = (id) => {
+      cart = cart.filter(i => i.id !== id);
+      renderCart();
+    };
+
+    window.toggleOrdersModal = (show) => {
+      const modal = document.getElementById('orders-modal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    };
+
+    window.handlePlaceOrder = async () => {
+      if (!user || cart.length === 0) return;
+      isSubmitting = true;
+      renderCart(); // 觸發 Loading 狀態
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      try {
+        const ordersRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'restaurant_orders');
+        await addDoc(ordersRef, {
+          items: cart,
+          total: total,
+          status: 'preparing',
+          createdAt: new Date().toISOString(),
+          userId: user.uid
+        });
+        cart = []; // 清空購物車
+      } catch (error) {
+        console.error("Error placing order:", error);
+      } finally {
+        isSubmitting = false;
+        renderCart();
+      }
+    };
+
+    window.toggleOrderStatus = async (orderId, currentStatus) => {
+      if (!user) return;
+      try {
+        const orderRef = doc(db, 'artifacts', globalAppId, 'public', 'data', 'restaurant_orders', orderId);
+        await updateDoc(orderRef, {
+          status: currentStatus === 'preparing' ? 'completed' : 'preparing'
+        });
+      } catch (error) {
+        console.error("Error updating order:", error);
+      }
+    };
+
+    // ==========================================
+    // 5. Firebase 驗證與監聽
+    // ==========================================
+    async function initAuth() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Authentication failed:", error);
+      }
+    }
+
+    onAuthStateChanged(auth, (currentUser) => {
+      user = currentUser;
+      renderOrders(); // 重繪訂單面板
+      
+      if (user) {
+        // Auth 成功後才讀取 Firestore (RULE 3)
+        const ordersRef = collection(db, 'artifacts', globalAppId, 'public', 'data', 'restaurant_orders');
+        onSnapshot(ordersRef, (snapshot) => {
+          const fetchedOrders = [];
+          snapshot.forEach((doc) => {
+            fetchedOrders.push({ id: doc.id, ...doc.data() });
+          });
+          fetchedOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          orders = fetchedOrders;
+          renderOrders();
+        }, (error) => {
+          console.error("Error fetching orders:", error);
+        });
+      }
+    });
+
+    // ==========================================
+    // 6. 初始化渲染
+    // ==========================================
+    renderCategories();
+    renderMenu();
+    renderCart();
+    renderOrders();
+    initAuth();
+
+  </script>
+</body>
+</html>
